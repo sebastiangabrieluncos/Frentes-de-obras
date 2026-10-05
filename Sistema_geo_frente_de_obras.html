@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Obras en ejecución — Portal de Datos SMT</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+  /* ==================== TOKENS DE TEMA ==================== */
+  :root, [data-theme="light"]{
+    --azul-fuerte:  #0066FF;
+    --azul-titulo:  #002c59;   /* más oscuro para mejor contraste */
+    --azul-claro:   #2eabff;
+    --azul-oscuro:  #002c59;
+
+    --bg-page:       #f5f7fb;
+    --bg-card:       #ffffff;
+    --bg-soft:       #eef2f8;
+    --bg-header:     #ffffff;
+    --bg-topbar:     #1c2a44;   /* navy oscuro de la barra superior */
+
+    --text-strong:   #0c1424;   /* casi negro azulado, máximo contraste */
+    --text-base:     #1f2937;   /* texto cuerpo principal */
+    --text-soft:     #4b5566;   /* texto secundario */
+    --text-muted:    #6b7484;
+
+    --border:        #d0d8e3;
+    --border-soft:   #e5ebf3;
+
+    --shadow:        0 1px 3px rgba(12,20,36,0.06), 0 4px 12px rgba(12,20,36,0.05);
+    --shadow-strong: 0 4px 24px rgba(12,20,36,0.10);
+  }
+  [data-theme="dark"]{
+    --azul-fuerte:  #3b82f6;
+    --azul-titulo:  #93c5fd;
+    --azul-claro:   #38bdf8;
+    --azul-oscuro:  #cfe1f5;
+
+    --bg-page:       #0d1219;
+    --bg-card:       #181f2b;
+    --bg-soft:       #232b39;
+    --bg-header:     #131822;
+    --bg-topbar:     #060a12;
+
+    --text-strong:   #f3f6fa;
+    --text-base:     #dbe2ec;
+    --text-soft:     #a6b0bf;
+    --text-muted:    #74808f;
+
+    --border:        #2c3543;
+    --border-soft:   #1f2733;
+
+    --shadow:        0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.25);
+    --shadow-strong: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  *{ box-sizing:border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    font-family:'Poppins', system-ui, -apple-system, sans-serif;
+    color:var(--text-base);
+    background:var(--bg-page);
+    line-height:1.5;
+    min-height:100vh;
+    transition: background 0.25s, color 0.25s;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ==================== TOP BAR ==================== */
+  .site-top-bar{
+    background:var(--bg-topbar);
+    height:36px;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    padding:0 32px;
+    gap:12px;
+  }
+  .site-top-bar a{
+    color:#fff;
+    opacity:0.85;
+    display:flex;
+    align-items:center;
+    padding:6px;
+    transition: opacity 0.15s;
+  }
+  .site-top-bar a:hover{ opacity:1; }
+  .site-top-bar svg{
+    width:18px;
+    height:18px;
+    fill:currentColor;
+  }
+
+  /* ==================== HEADER PRINCIPAL ==================== */
+  .site-header{
+    background:var(--bg-header);
+    border-bottom:1px solid var(--border-soft);
+    padding:14px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:24px;
+  }
+  .site-header .logo{
+    display:flex; align-items:center; gap:14px;
+    text-decoration:none;
+  }
+  .site-header .logo img{ height:64px; width:auto; }
+  [data-theme="dark"] .site-header .logo img{
+    filter:brightness(1.7) contrast(0.9);
+  }
+
+  .site-nav{ display:flex; gap:2px; align-items:center; flex-wrap:wrap; }
+  .site-nav a{
+    color:var(--text-strong);
+    text-decoration:none;
+    font-size:15px; font-weight:500;
+    padding:10px 18px; border-radius:8px;
+    transition: background 0.15s, color 0.15s;
+    display:flex; align-items:center; gap:4px;
+  }
+  .site-nav a:hover{
+    background:var(--bg-soft);
+    color:var(--azul-fuerte);
+  }
+  .site-nav .has-arrow::after{
+    content: '';
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid currentColor;
+    margin-left: 2px;
+    opacity: 0.7;
+  }
+  .theme-toggle{
+    background:transparent;
+    border:1px solid var(--border);
+    border-radius:50%;
+    width:38px; height:38px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-base);
+    margin-left:8px;
+    transition: background 0.15s, transform 0.15s, border-color 0.15s;
+    flex-shrink:0;
+  }
+  .theme-toggle:hover{
+    background:var(--bg-soft);
+    border-color:var(--azul-fuerte);
+    transform: rotate(15deg);
+  }
+  .theme-toggle svg{
+    width:16px; height:16px;
+    stroke:currentColor; fill:none;
+    stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+  }
+  [data-theme="light"] .theme-icon-moon{ display:block; }
+  [data-theme="light"] .theme-icon-sun { display:none; }
+  [data-theme="dark"]  .theme-icon-moon{ display:none; }
+  [data-theme="dark"]  .theme-icon-sun { display:block; }
+
+  /* ==================== CONTENIDO ==================== */
+  .main-container{
+    max-width:1500px;
+    margin:0 auto;
+    padding:32px;
+  }
+  .page-title-block{
+    margin-bottom:22px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .page-title{
+    font-size:34px; font-weight:700;
+    color:var(--text-strong);
+    margin:0;
+    letter-spacing:-0.6px;
+    line-height:1.15;
+  }
+  .btn-fullscreen{
+    background:var(--bg-card);
+    border:1.5px solid var(--border);
+    color:var(--text-base);
+    font-family:inherit;
+    font-size:13px; font-weight:600;
+    padding:10px 16px;
+    border-radius:10px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:8px;
+    transition: all 0.15s;
+    flex-shrink:0;
+  }
+  .btn-fullscreen:hover{
+    border-color:var(--azul-fuerte);
+    color:var(--azul-fuerte);
+  }
+  .btn-fullscreen svg{ width:15px; height:15px; fill:currentColor; }
+
+  /* ==================== APP ==================== */
+  .app{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "kpis mapa";
+    height:calc(100vh - 280px);
+    min-height:640px;
+    background:var(--bg-card);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: var(--shadow-strong);
+    border:1px solid var(--border-soft);
+  }
+
+  /* ==================== PANEL IZQUIERDO ==================== */
+  .kpis{
+    grid-area:kpis;
+    padding:22px 20px;
+    border-right:1px solid var(--border-soft);
+    overflow:auto;
+    background:var(--bg-card);
+    display:flex; flex-direction:column;
+    gap:16px;
+  }
+
+  /* Selector de estado */
+
+  /* Tarjeta de KPIs */
+  .kpi-card{
+    border:1.5px solid var(--azul-titulo);
+    border-radius:14px;
+    padding:16px 18px;
+    background:var(--bg-card);
+  }
+  .kpi-mes{
+    font-size:14px; font-weight:600;
+    color:var(--azul-titulo);
+    margin-bottom:12px;
+    text-transform:none;
+    border-bottom:1px solid var(--border-soft);
+    padding-bottom:10px;
+    line-height:1.3;
+  }
+  .kpi-item{
+    margin:6px 0;
+    color:var(--azul-titulo);
+    font-weight:600; font-size:13px;
+    line-height:1.4;
+    display:flex; flex-wrap:wrap; gap:4px; align-items:baseline;
+  }
+  .kpi-item .val{ font-weight:700; font-size:13.5px; }
+  .kpi-item .total-wrap{
+    font-weight:500;
+    color:var(--text-soft);
+    font-size:11.5px;
+  }
+  .kpi-item .total-num{
+    color:var(--text-base);
+    font-weight:600;
+  }
+  .kpi-item .barra{
+    color:var(--border);
+    font-weight:400;
+    padding:0 2px;
+  }
+  .val-unico{
+    font-weight:700;
+    font-size:14px;
+    color:var(--azul-titulo);
+  }
+
+  /* ==================== FILTROS POR TIPO ==================== */
+  .filtros{
+    padding:14px 16px;
+    background:var(--bg-soft);
+    border-radius:10px;
+  }
+  .filtros-header{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:8px;
+  }
+  .filtros-header h4{
+    margin:0; font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1.4px;
+    color:var(--text-soft);
+    font-weight:700;
+  }
+  .filtros-acciones{ display:flex; gap:4px; }
+  .btn-mini{
+    background:transparent; border:1px solid var(--border);
+    color:var(--text-soft);
+    font-family:inherit;
+    font-size:10px; font-weight:600;
+    padding:3px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    transition: all 0.15s;
+  }
+  .btn-mini:hover{
+    background:var(--bg-card);
+    color:var(--text-strong);
+    border-color:var(--azul-fuerte);
+  }
+  .filtros-items{
+    display:flex; flex-direction:column;
+    gap:1px;
+  }
+  .filtro-item{
+    display:flex; align-items:center; gap:9px;
+    padding:5px 6px;
+    border-radius:6px;
+    cursor:pointer;
+    user-select:none;
+    color:var(--text-base);
+    font-size:12.5px;
+    transition: background 0.12s, opacity 0.15s;
+  }
+  .filtro-item:hover{ background:var(--bg-card); }
+  .filtro-item .dot{
+    width:11px; height:11px;
+    border-radius:50%;
+    flex-shrink:0;
+    transition: all 0.15s;
+  }
+  .filtro-item .count{
+    margin-left:auto;
+    font-size:11px;
+    color:var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    font-weight:500;
+  }
+  .filtro-item.inactivo{ opacity:0.4; }
+  .filtro-item.inactivo .dot{
+    background:transparent !important;
+    box-shadow: inset 0 0 0 2px var(--text-muted);
+  }
+
+  /* ==================== ESTADO DE DATOS ==================== */
+  /* ── Aviso condiciones climáticas ── */
+  .aviso-clima{
+    display:flex; gap:10px; align-items:flex-start;
+    background:#fffbeb;
+    border:1px solid #fcd34d;
+    border-left:3px solid #f59e0b;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:11.5px; line-height:1.5;
+    color:#78350f;
+  }
+  .aviso-clima svg{
+    flex-shrink:0; margin-top:1px;
+    color:#f59e0b; width:16px; height:16px;
+  }
+  [data-theme="dark"] .aviso-clima{
+    background:rgba(245,158,11,0.08);
+    border-color:rgba(245,158,11,0.25);
+    border-left-color:rgba(245,158,11,0.6);
+    color:#fde68a;
+  }
+  [data-theme="dark"] .aviso-clima svg{ color:#fbbf24; }
+
+  .estado-datos{
+    font-size:10.5px;
+    padding:7px 12px;
+    border-radius:7px;
+    font-weight:500;
+    margin-top:auto;
+  }
+  .estado-datos.ok      { background:#ecfdf5; color:#065f46; }
+  .estado-datos.cargando{ background:#eff6ff; color:#1e40af; }
+  .estado-datos.error   { background:#fee2e2; color:#991b1b; }
+  [data-theme="dark"] .estado-datos.ok      { background:rgba(16,185,129,0.15);   color:#6ee7b7; }
+  [data-theme="dark"] .estado-datos.cargando{ background:rgba(59,130,246,0.15);   color:#93c5fd; }
+  [data-theme="dark"] .estado-datos.error   { background:rgba(239,68,68,0.15);    color:#fca5a5; }
+
+  /* ==================== MAPA ==================== */
+  .mapa-wrap{ grid-area:mapa; position:relative; }
+  #map{
+    width:100%; height:100%;
+    background:var(--bg-soft);
+  }
+  .leaflet-container{
+    font-family:'Poppins', sans-serif;
+    background:var(--bg-soft);
+  }
+
+  /* Mejora de contraste sobre el tile actual: 
+     se aplica un filtro CSS sutil al pane de tiles, 
+     que oscurece líneas y desatura levemente. */
+  .leaflet-tile-pane{
+    filter: contrast(1.10) saturate(0.92) brightness(0.99);
+  }
+  [data-theme="dark"] .leaflet-tile-pane{
+    filter: contrast(1.05) saturate(0.85) brightness(0.95);
+  }
+
+  .leaflet-control-attribution{ font-size:10px; opacity:0.6; }
+  [data-theme="dark"] .leaflet-control-attribution{
+    background:rgba(20,26,36,0.8) !important;
+    color:var(--text-soft) !important;
+  }
+  [data-theme="dark"] .leaflet-control-attribution a{ color:var(--azul-claro) !important; }
+  .leaflet-bar a, .leaflet-control-layers{
+    background:var(--bg-card) !important;
+    color:var(--text-base) !important;
+    border-color:var(--border) !important;
+  }
+  .leaflet-bar a:hover{ background:var(--bg-soft) !important; }
+  .leaflet-control-layers-expanded{
+    padding:10px 14px !important;
+    font-family:'Poppins', sans-serif;
+    font-size:13px;
+    box-shadow: var(--shadow);
+    border-radius:8px !important;
+  }
+  .leaflet-control-layers-expanded label{ margin:4px 0; }
+
+  /* ==================== TIMELINE ==================== */
+
+  /* ==================== TOOLTIPS LEAFLET ==================== */
+  .leaflet-tooltip{
+    font-family:'Poppins', sans-serif;
+    font-size:11px; font-weight:500;
+    background:var(--bg-card);
+    color:var(--text-base);
+    border:1px solid var(--border);
+    box-shadow: var(--shadow);
+    border-radius:6px;
+    padding:6px 10px;
+    max-width:280px;
+    white-space:normal;
+  }
+  .leaflet-tooltip::before{ border-top-color: var(--bg-card); }
+  .leaflet-tooltip strong{ color:var(--azul-titulo); }
+  .leaflet-tooltip .tt-mes{
+    display:block;
+    font-size:10.5px;
+    color:var(--text-muted);
+    font-weight:500;
+    text-transform:capitalize;
+    margin-top:2px;
+  }
+  .leaflet-tooltip .tt-estado{
+    display:inline-block;
+    font-size:9.5px;
+    padding:1px 6px;
+    border-radius:3px;
+    background:var(--bg-soft);
+    color:var(--text-soft);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin-top:3px;
+    font-weight:600;
+  }
+
+  /* ==================== FOOTER ==================== */
+  .site-footer{
+    text-align:center;
+    padding:20px 32px;
+    color:var(--text-muted);
+    font-size:12px;
+    border-top:1px solid var(--border-soft);
+    margin-top:20px;
+  }
+
+  /* ==================== FULL-SCREEN MODE ==================== */
+  .fullscreen-logo{
+    display:none;
+    position:fixed;
+    top:18px; left:460px;
+    z-index:1500;
+    background:transparent;
+    padding:0;
+    border-radius:10px;
+    box-shadow: none;
+    border:none;
+  }
+  .fullscreen-logo img{ height:32px; width:auto; display:block; }
+  [data-theme="dark"] .fullscreen-logo img{ filter: brightness(1.6); }
+
+  .btn-exit-fullscreen{
+    display:none;
+    position:fixed;
+    top:18px; right:18px;
+    z-index:1500;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    color:var(--text-base);
+    width:38px; height:38px;
+    border-radius:50%;
+    cursor:pointer;
+    align-items:center; justify-content:center;
+    box-shadow: var(--shadow);
+    font-size:14px;
+    transition: all 0.15s;
+  }
+  .btn-exit-fullscreen:hover{
+    border-color:var(--azul-fuerte);
+    color:var(--azul-fuerte);
+  }
+  .btn-exit-fullscreen svg{ width:16px; height:16px; }
+
+  body.fullscreen .site-top-bar,
+  body.fullscreen .site-header,
+  body.fullscreen .page-title-block,
+  body.fullscreen .site-footer{
+    display:none;
+  }
+  body.fullscreen .main-container{
+    max-width:none;
+    padding:12px;
+    height:100vh;
+  }
+  body.fullscreen .app{
+    height:calc(100vh - 24px);
+  }
+  body.fullscreen .fullscreen-logo{ display:block; }
+  body.fullscreen .btn-exit-fullscreen{ display:flex; }
+
+  /* ==================== RESPONSIVE ==================== */
+  @media (max-width: 1100px){
+    .main-container{ padding:24px; }
+    .app{ grid-template-columns: 340px 1fr; }
+  }
+  @media (max-width: 900px){
+    .site-top-bar{ padding:0 16px; }
+    .site-header{ padding:12px 16px; gap:12px; flex-wrap:wrap; }
+    .site-header .logo img{ height:46px; }
+    .main-container{ padding:18px; }
+    .page-title{ font-size:24px; }
+    .app{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 60vh auto;
+      grid-template-areas: "kpis" "mapa";
+      height:auto;
+    }
+    .kpis{ border-right:none; border-bottom:1px solid var(--border-soft); }
+  }
+
+  /* ==================== DROPDOWN NAV ==================== */
+  .nav-dropdown{ position:relative; }
+  .nav-dropdown-menu{
+    display:none; position:absolute;
+    top:calc(100% + 4px); left:0;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:var(--shadow-strong);
+    min-width:230px; z-index:200;
+    overflow:hidden; padding:6px 0;
+  }
+  .nav-dropdown:hover .nav-dropdown-menu,
+  .nav-dropdown:focus-within .nav-dropdown-menu{ display:block; }
+  .nav-dropdown-menu a{
+    display:block; padding:10px 18px;
+    font-size:14px; font-weight:500;
+    color:var(--text-base); text-decoration:none;
+    transition:background .12s,color .12s;
+  }
+  .nav-dropdown-menu a:hover{ background:var(--bg-soft); color:var(--azul-fuerte); }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<div class="site-top-bar">
+  <a href="https://www.facebook.com/MuniSMTucuman" target="_blank" rel="noopener" aria-label="Facebook">
+    <svg viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
+  </a>
+  <a href="https://x.com/MuniSMT" target="_blank" rel="noopener" aria-label="X">
+    <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+  </a>
+  <a href="https://www.instagram.com/munismtucuman" target="_blank" rel="noopener" aria-label="Instagram">
+    <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+  </a>
+  <a href="https://www.youtube.com/user/MuniSMTucuman" target="_blank" rel="noopener" aria-label="YouTube">
+    <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+  </a>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header">
+  <a class="logo" href="https://smtendatos.gob.ar/" target="_blank" rel="noopener">
+    <img src="https://smtendatos.gob.ar/wp-content/uploads/2025/03/logo-smt-portal-de-datos.png"
+         alt="Portal de Datos · San Miguel de Tucumán" />
+  </a>
+  <nav class="site-nav">
+    <a href="https://smt.gob.ar/area/intendencia/1">Autoridades</a>
+    <a href="https://smtendatos.gob.ar/transparencia/estrategia-de-datos">Estrategia de datos</a>
+    <div class="nav-dropdown">
+      <a href="#" class="has-arrow" onclick="return false">Datos</a>
+      <div class="nav-dropdown-menu">
+        <!-- Editá textos y href: -->
+        <a href="https://smtendatos.gob.ar/transparencia/datos-publicos/">De la gestión</a>
+        <a href="https://smtendatos.gob.ar/personas/">De las personas</a>
+        <a href="https://smtendatos.gob.ar/ciudad/">De la ciudad</a>
+      </div>
+    </div>
+    <a href="https://smtendatos.gob.ar/transparencia/portal-de-mapas/">Descargables</a>
+    <a href="https://smtendatos.gob.ar/intranet-portal/">Intranet</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg class="theme-icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="theme-icon-sun"  viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </nav>
+</header>
+
+<!-- ============ CONTENIDO ============ -->
+<main class="main-container">
+  <div class="page-title-block">
+    <h1 class="page-title">Obras en ejecución</h1>
+    <button class="btn-fullscreen" id="btnFullscreen" title="Ver a pantalla completa">
+      <svg viewBox="0 0 24 24"><path d="M3 3h7v2H5v5H3V3zm11 0h7v7h-2V5h-5V3zM3 14h2v5h5v2H3v-7zm16 0h2v7h-7v-2h5v-5z"/></svg>
+      <span>Pantalla completa</span>
+    </button>
+  </div>
+
+  <div class="app">
+
+    <aside class="kpis" id="kpisPanel">
+<div class="kpi-card">
+        <div class="kpi-mes">Obras en ejecución</div>
+        <div id="kpiItems"></div>
+      </div>
+
+      <div class="filtros">
+        <div class="filtros-header">
+          <h4>Filtros por tipo</h4>
+          <div class="filtros-acciones">
+            <button class="btn-mini" id="btnTodas">Todas</button>
+            <button class="btn-mini" id="btnNinguna">Ninguna</button>
+          </div>
+        </div>
+        <div class="filtros-items" id="filtrosItems"></div>
+      </div>
+
+      <div class="aviso-clima">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19a4.5 4.5 0 0 0 0-9 5 5 0 0 0-9.9-1A3.5 3.5 0 0 0 4 13.5a3.5 3.5 0 0 0 3.5 3.5"/>
+          <line x1="13" y1="13" x2="11" y2="17"/><line x1="11" y1="17" x2="13" y2="21"/>
+        </svg>
+        <span>Las condiciones climáticas pueden incidir en el avance de las obras. Los datos reflejan el estado registrado y pueden no coincidir con la actividad real en campo al momento de la consulta.</span>
+      </div>
+
+      <div class="estado-datos cargando" id="estado">Cargando datos del Sheet…</div>
+    </aside>
+
+    <div class="mapa-wrap">
+      <div id="map"></div>
+    </div>
+</div>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  Municipalidad de San Miguel de Tucumán
+</footer>
+
+<!-- ============ ELEMENTOS DE PANTALLA COMPLETA ============ -->
+<div class="fullscreen-logo">
+  <img src="Logo_SMT_pos_4.svg" alt="CIUDAD SMT" />
+</div>
+<button class="btn-exit-fullscreen" id="btnExitFullscreen" title="Salir de pantalla completa">
+  <svg viewBox="0 0 24 24"><path d="M18.3 5.71L12 12.01l-6.29-6.3-1.42 1.42 6.3 6.29-6.3 6.29 1.42 1.42 6.29-6.3 6.29 6.3 1.42-1.42-6.3-6.29 6.3-6.29z" fill="currentColor"/></svg>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN — Google Sheet
+   ============================================================ */
+
+const SHEET_ID       = '1BkpIQ-kG_0C_5wmjjx_mxlxi-LE7I3dHzCRQ4OOXsc0'; // kpis, equivalencias
+const SHEET_ID_OBRAS = '1_tamFE1Kxvpp73XGB9uE_O4yOPZlNCZUInljn7J_HfU';   // base_datos (fuente directa)
+// Dejá SHEET_ID_OBRAS = '' si ambas pestañas están en el mismo archivo
+
+const urlGviz = (sheetName, id) =>
+  `https://docs.google.com/spreadsheets/d/${id || SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+const URL_KPIS  = urlGviz('kpis');
+const URL_OBRAS = SHEET_ID_OBRAS ? urlGviz('base_datos', SHEET_ID_OBRAS) : urlGviz('obras');
+
+/* ============================================================
+   METADATOS DE CATEGORÍAS
+   ============================================================ */
+
+// Cada categoría tiene:
+//   plural         → etiqueta en modo "Obras realizadas"  (lo que se hizo)
+//   pluralEjecucion → etiqueta en modo "Obras en ejecución" (lo que se está haciendo ahora)
+// Para agregar más: sumá la columna en la pestaña kpis del Sheet y registrala acá.
+const CATEGORIAS = {
+  pav:  { label:'Pavimentación',           plural:'Calles pavimentadas',       pluralEjecucion:'Pavimentación en curso',       color:'#0066FF', radio:6   },
+  rep:  { label:'Repavimentación',         plural:'Calles repavimentadas',      pluralEjecucion:'Repavimentación en curso',      color:'#2eabff', radio:5.5 },
+  bac:  { label:'Bacheo',                  plural:'Baches tapados',             pluralEjecucion:'Bacheo en curso',               color:'#f59e0b', radio:3.5 },
+  cun:  { label:'Cordón cuneta',           plural:'Cordones cuneta',            pluralEjecucion:'Cordón cuneta en curso',         color:'#16a34a', radio:5   },
+  imb:  { label:'Limpieza de imbornales',  plural:'Imbornales limpiados',       pluralEjecucion:'Limpieza de imbornales en curso',color:'#10b981', radio:5   },
+  per:  { label:'Perfilado y enripiado',   plural:'Calles perfiladas',          pluralEjecucion:'Perfilado en curso',             color:'#a855f7', radio:4.5 },
+  plu:  { label:'Cámaras pluviales',       plural:'Cámaras reparadas',          pluralEjecucion:'Reparación de cámaras en curso', color:'#06b6d4', radio:5   },
+  sem:  { label:'Semáforos (instalación)', plural:'Semáforos instalados',       pluralEjecucion:'Semáforos en instalación',       color:'#ec4899', radio:5.5 },
+  semr: { label:'Semáforos (reparación)',  plural:'Semáforos reparados',        pluralEjecucion:'Semáforos en reparación',        color:'#f97316', radio:5   },
+  lum:  { label:'Luminarias nuevas',       plural:'Luminarias instaladas',      pluralEjecucion:'Instalación de luminarias',      color:'#22c55e', radio:5   },
+  lur:  { label:'Luminarias reparadas',    plural:'Luminarias reparadas',       pluralEjecucion:'Reparación de luminarias',       color:'#ef4444', radio:4.5 }
+};
+
+const CATEGORIA_DEFAULT = {
+  label:'Otra obra', plural:'Otras obras', pluralEjecucion:'En curso', color:'#64748b', radio:4
+};
+const metaCat = (codigo) =>
+  CATEGORIAS[codigo] || { ...CATEGORIA_DEFAULT, label: codigo, plural: codigo, pluralEjecucion: codigo + ' en curso' };
+
+/* ============================================================
+   THEME, FULLSCREEN & LOCALSTORAGE
+   ============================================================ */
+
+const THEME_KEY = 'smt-obras-theme';
+const MAP_KEY   = 'smt-obras-map';
+const FS_KEY    = 'smt-obras-fs';
+
+(function initTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  const initial = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', initial);
+})();
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const actual = document.documentElement.getAttribute('data-theme');
+  const nuevo = actual === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nuevo);
+  localStorage.setItem(THEME_KEY, nuevo);
+});
+
+function toggleFullscreen(){
+  document.body.classList.toggle('fullscreen');
+  // Forzar al mapa a recalcular tamaño
+  setTimeout(() => mapa.invalidateSize(), 50);
+}
+document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
+document.getElementById('btnExitFullscreen').addEventListener('click', toggleFullscreen);
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.body.classList.contains('fullscreen')){
+    toggleFullscreen();
+  }
+});
+
+/* ============================================================
+   Mapa: configuración y capas base
+   ============================================================ */
+if(typeof L === 'undefined'){
+  document.getElementById('map').innerHTML =
+    '<div style="padding:40px;color:#002c59"><strong>No se pudo cargar Leaflet.</strong></div>';
+  throw new Error('Leaflet no cargó');
+}
+
+const SMT_CENTRO = [-26.8241, -65.2226];
+const mapa = L.map('map', { center: SMT_CENTRO, zoom: 13, zoomControl: true });
+
+const baseLayers = {
+  'Claro (institucional)': L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19 }
+  ),
+  'Estándar': L.tileLayer(
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution:'&copy; OpenStreetMap', maxZoom:19 }
+  ),
+  'Voyager (color suave)': L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    { attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19 }
+  ),
+  'Oscuro': L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19 }
+  ),
+  'Topográfico': L.tileLayer(
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution:'Map data: &copy; OpenStreetMap, SRTM | Style: &copy; OpenTopoMap', subdomains:'abc', maxZoom:17 }
+  ),
+  'Satélite': L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution:'Tiles &copy; Esri', maxZoom:18 }
+  )
+};
+const styleGuardado = localStorage.getItem(MAP_KEY);
+const capaInicial = (styleGuardado && baseLayers[styleGuardado]) || baseLayers['Claro (institucional)'];
+capaInicial.addTo(mapa);
+L.control.layers(baseLayers, null, { position:'topright', collapsed:true }).addTo(mapa);
+mapa.on('baselayerchange', (e) => localStorage.setItem(MAP_KEY, e.name));
+
+const capaObras = L.layerGroup().addTo(mapa);
+
+/* ============================================================
+   Utilidades
+   ============================================================ */
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false, i = 0;
+  while(i < text.length){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      field += ch; i++; continue;
+    }
+    if(ch === '"'){ inQuotes = true; i++; continue; }
+    if(ch === ','){ row.push(field); field = ''; i++; continue; }
+    if(ch === '\r'){ i++; continue; }
+    if(ch === '\n'){
+      row.push(field); rows.push(row);
+      row = []; field = ''; i++; continue;
+    }
+    field += ch; i++;
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  if(!rows.length) return [];
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1)
+    .filter(r => r.some(c => c && c.trim().length))
+    .map(r => Object.fromEntries(headers.map((h,k) => [h, (r[k]||'').trim()])));
+}
+
+function parseCoord(s){
+  if(s === undefined || s === null || s === '') return NaN;
+  return parseFloat(String(s).trim().replace(',', '.'));
+}
+
+function normalizarMes(s){
+  const m = String(s||'').trim().match(/^(\d{4})-(\d{1,2})$/);
+  if(!m) return null;
+  const y = parseInt(m[1]);
+  const mm = parseInt(m[2]);
+  if(y < 2000 || y > 2100 || mm < 1 || mm > 12) return null;
+  return `${y}-${String(mm).padStart(2,'0')}`;
+}
+
+// Parse fechas: DD/MM/YYYY o YYYY-MM-DD
+function parsearFecha(s){
+  if(!s) return null;
+  const t = String(s).trim();
+  if(!t || t === '#N/A' || t === '#REF!') return null;
+  let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+  m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  return null;
+}
+
+const HOY = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+function determinarEstado(fecha_fin){
+  const fecha = parsearFecha(fecha_fin);
+  if(!fecha) return 'ejecucion';   // sin fecha o no parseable → en ejecución
+  return fecha <= HOY ? 'realizada' : 'ejecucion';
+}
+
+const ETIQUETAS_MES = ['ene.','feb.','mar.','abr.','may.','jun.',
+                       'jul.','ago.','sep.','oct.','nov.','dic.'];
+const NOMBRES_MES   = ['enero','febrero','marzo','abril','mayo','junio',
+                       'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const nombreLargoMes = (claveMes) => {
+  const [y, mm] = claveMes.split('-').map(Number);
+  return `${NOMBRES_MES[mm-1]} de ${y}`;
+};
+const fmt = (n) => Number(n).toLocaleString('es-AR');
+
+/* ============================================================
+   Carga y procesado de datos
+   ============================================================ */
+
+async function cargarDatos(){
+  try{
+    const [rK, rO, rE] = await Promise.all([
+      fetch(URL_KPIS),
+      fetch(URL_OBRAS),
+      fetch(urlGviz('equivalencias')).catch(() => null)   // opcional pero necesaria para base_datos
+    ]);
+    if(!rK.ok) throw new Error(`kpis: HTTP ${rK.status}`);
+    if(!rO.ok) throw new Error(`obras/base_datos: HTTP ${rO.status}. Verificá que el archivo esté compartido como "Cualquiera con el enlace: Lector".`);
+    const kpis  = parseCSV(await rK.text());
+    const obras = parseCSV(await rO.text());
+    const equiv = (rE && rE.ok) ? parseCSV(await rE.text()) : [];
+    if(!kpis.length) throw new Error('La pestaña kpis está vacía');
+    return { ok:true, kpis, obras, equiv };
+  }catch(err){
+    return { ok:false, error: err.message };
+  }
+}
+
+
+let EQUIV_MAP = {};  // 'repavimentación hormigón' → 'rep', etc.
+
+function buildEquivMap(rawEquiv){
+  EQUIV_MAP = {};
+  for(const r of rawEquiv){
+    if(r.original && r.corto)
+      EQUIV_MAP[r.original.toLowerCase().trim()] = r.corto.toLowerCase().trim();
+  }
+}
+
+// Detecta si las filas vienen del formato 'base_datos' (columnas en MAYÚSCULAS)
+// o del formato 'obras' (columnas en minúsculas, tipo ya en código corto).
+function detectarFormato(rows){
+  if(!rows.length) return 'obras';
+  const keys = Object.keys(rows[0]);
+  return (keys.includes('TIPO') || keys.includes('FECHA_INICIO')) ? 'original' : 'obras';
+}
+
+// Mapa de alias para códigos que la pestaña 'obras' usa pero kpis no tiene como columna.
+// rph (Reemplazo de Paños de Hormigón) es un tipo de repavimentación → 'rep'
+// Editá este mapa si necesitás agregar más equivalencias.
+const TIPO_ALIAS = { rph: 'rep', sat: 'rep' };
+
+function normalizarFilaObra(o){
+  const fechaFinRaw = o['Fecha de finalizacion'] || o['FECHA_FIN'] || '';
+  const estadoRaw   = (o['ESTADO'] || '').trim();
+
+  // tipo: mapear nombre completo → código corto vía equivalencias
+  const tipoRaw = (o['TIPO'] || o['Tipo'] || '').trim();
+  let tipo = EQUIV_MAP[tipoRaw.toLowerCase()] || tipoRaw.toLowerCase().replace(/\s+/g,'_');
+  // Aplicar alias si el código resultante no coincide con columnas de kpis
+  tipo = TIPO_ALIAS[tipo] || tipo;
+
+  // mes: derivar de Fecha de finalizacion
+  const fechaFinObj = parsearFecha(fechaFinRaw);
+  const mes = fechaFinObj
+    ? `${fechaFinObj.getFullYear()}-${String(fechaFinObj.getMonth()+1).padStart(2,'0')}`
+    : null;
+
+  // ── ESTADO como clasificador primario ─────────────────────────────────────
+  // Sin esto: obras TERMINADO con Fecha de finalizacion = #N/A
+  //           quedan clasificadas como ejecución por error.
+  // Regla:
+  //   Terminado          → realizada (aunque fecha sea #N/A)
+  //   En Proceso         → ejecución
+  //   A Espera de Inicio → ejecución
+  //   sin ESTADO         → delegar a fecha_fin (compatibilidad con pestaña obras)
+  let fecha_fin;
+  if(estadoRaw === 'Terminado'){
+    fecha_fin = (fechaFinRaw && fechaFinRaw !== '#N/A') ? fechaFinRaw : '01/01/2020';
+  } else if(estadoRaw === 'En Proceso' || estadoRaw === 'A Espera de Inicio'){
+    fecha_fin = '';   // sin fecha → determinarEstado() → ejecución
+  } else {
+    fecha_fin = fechaFinRaw;  // sin ESTADO: usar fecha_fin directamente
+  }
+
+  return {
+    mes, tipo,
+    lat:         o['LATITUD']          || o['Latitud']          || '',
+    lng:         o['LONGITUD']         || o['Longitud']          || '',
+    descripcion: o['DIRECCIÓN POSTAL'] || o['Dirección Postal']  || o['UBICACIÓN'] || '',
+    fecha_fin
+  };
+}
+
+function procesar(rawKpis, rawObras, rawEquiv = []){
+  const dropped = { kpis:0, obras:0, obrasFueraDeKpi:0 };
+
+  // Categorías = columnas de la pestaña kpis (excepto mes/nombre)
+  const headers = Object.keys(rawKpis[0] || {});
+  const codigosKpi = headers.filter(h => h !== 'mes' && h !== 'nombre');
+  const setKpi = new Set(codigosKpi);
+
+  // Meses de la pestaña kpis (catálogo de nombres bonitos)
+  const nombresMeses = {};
+  for(const r of rawKpis){
+    const claveOk = normalizarMes(r.mes);
+    if(!claveOk){ dropped.kpis++; continue; }
+    nombresMeses[claveOk] = r.nombre || nombreLargoMes(claveOk);
+  }
+
+  // Normalizar obras si vienen en formato base_datos (columnas MAYÚSCULAS)
+  buildEquivMap(rawEquiv);
+  const formato = detectarFormato(rawObras);
+  const obrasNorm = (formato === 'original') ? rawObras.map(normalizarFilaObra) : rawObras;
+
+  // Procesar todas las obras
+  const obras = [];
+  const mesesSet = new Set();
+
+  for(const o of obrasNorm){
+    // Normalizar tipo también para la pestaña obras (alias rph→rep, etc.)
+    const tipo = TIPO_ALIAS[(o.tipo || '').toLowerCase().trim()] || (o.tipo || '').toLowerCase().trim();
+    if(!tipo){ dropped.obras++; continue; }
+    if(!setKpi.has(tipo)){ dropped.obrasFueraDeKpi++; continue; }
+
+    const claveOk = normalizarMes(o.mes);  // puede ser null
+    const obraEstado = determinarEstado(o.fecha_fin);
+
+    // Una obra REALIZADA tiene que tener mes (para saber cuándo se hizo).
+    // Una obra EN EJECUCIÓN puede no tener mes (porque se está realizando ahora).
+    if(!claveOk && obraEstado === 'realizada'){
+      dropped.obras++;
+      continue;
+    }
+
+    const lat = parseCoord(o.lat);
+    const lng = parseCoord(o.lng);
+    const tieneCoord = !isNaN(lat) && !isNaN(lng);
+
+    obras.push({
+      mes: claveOk,
+      tipo,   // ya tiene alias aplicado (rph→rep, etc.)
+      lat: tieneCoord ? lat : null,
+      lng: tieneCoord ? lng : null,
+      descripcion: o.descripcion || '',
+      estado: obraEstado,
+      fecha_fin: o.fecha_fin || ''
+    });
+
+    if(claveOk) mesesSet.add(claveOk);
+  }
+
+  // Agregar también meses del kpis pestaña (aunque no tengan obras)
+  Object.keys(nombresMeses).forEach(k => mesesSet.add(k));
+
+  // Lista ordenada de meses
+  const meses = [...mesesSet].sort().map(key => {
+    const [y, mm] = key.split('-').map(Number);
+    return {
+      key,
+      etiqueta: ETIQUETAS_MES[mm-1],
+      anio: y,
+      nombre: nombresMeses[key] || nombreLargoMes(key)
+    };
+  });
+
+  return { meses, codigosKpi, obras, dropped };
+}
+
+// Construye índices por estado para query rápido.
+// Para 'ejecucion': las obras no se agrupan por mes (no importa cuándo empezaron,
+// lo que importa es que están en curso AHORA). Se indexa solo por tipo.
+// Para 'realizada': se agrupa por mes y tipo (cuándo se hizo cada cosa).
+function indexarPorEstado(D, filtroEstado){
+  const totales    = {};   // conteo total por categoría
+  const conteoGeo  = {};   // obras con coordenadas por categoría
+  const porTipo    = {};   // obras con coords por tipo (ejecución, sin mes)
+  const porMesTipo = {};   // obras con coords por mes y tipo (realizadas)
+  const perMes     = {};   // conteo por mes por categoría (realizadas)
+
+  D.codigosKpi.forEach(c => { totales[c] = 0; conteoGeo[c] = 0; porTipo[c] = []; });
+  D.meses.forEach(m => {
+    perMes[m.key] = {};
+    D.codigosKpi.forEach(c => perMes[m.key][c] = 0);
+  });
+
+  for(const o of D.obras){
+    if(o.estado !== filtroEstado) continue;
+    if(!(o.tipo in totales)) continue;
+
+    totales[o.tipo]++;
+
+    if(filtroEstado === 'realizada' && o.mes){
+      // Para realizadas: necesitamos el desglose mensual
+      if(perMes[o.mes]) perMes[o.mes][o.tipo]++;
+      if(o.lat !== null){
+        if(!porMesTipo[o.mes]) porMesTipo[o.mes] = {};
+        if(!porMesTipo[o.mes][o.tipo]) porMesTipo[o.mes][o.tipo] = [];
+        porMesTipo[o.mes][o.tipo].push(o);
+        conteoGeo[o.tipo]++;
+      }
+    } else if(filtroEstado === 'ejecucion'){
+      // Para ejecución: solo nos importa el tipo, no el mes
+      if(o.lat !== null){
+        porTipo[o.tipo].push(o);
+        conteoGeo[o.tipo]++;
+      }
+    }
+  }
+
+  return { porMesTipo, porTipo, totales, perMes, conteoGeo };
+}
+
+/* ============================================================
+   ESTADO GLOBAL DE LA VISTA
+   ============================================================ */
+
+let DATOS = null;
+let INDEX = null;
+const estado = {
+  filtroTipos: new Set()   // siempre ejecución, sin timeline
+};
+
+function rebuildIndex(){
+  INDEX = indexarPorEstado(DATOS, 'ejecucion');
+}
+// Devuelve las categorías a mostrar según el modo actual
+function codigosVisibles(){
+  return DATOS.codigosKpi.filter(c => INDEX.totales[c] > 0);
+}
+
+function renderPanel(){
+  const D = DATOS;
+  const esEjecucion = true;
+  const codigos = codigosVisibles();
+
+  // --- KPI items ---
+  const kpiCont = document.getElementById('kpiItems');
+  kpiCont.innerHTML = '';
+  codigos.forEach(c => {
+    const m = metaCat(c);
+    const lbl = esEjecucion ? (m.pluralEjecucion || m.plural) : m.plural;
+    const div = document.createElement('div');
+    div.className = 'kpi-item';
+    if(esEjecucion){
+      // En ejecución: un solo número, sin "del mes / total"
+      div.innerHTML = `
+        <span class="lbl">${lbl}:</span>
+        <span class="val val-unico" id="a-${c}">0</span>
+      `;
+    } else {
+      div.innerHTML = `
+        <span class="lbl">${lbl}:</span>
+        <span class="val" id="v-${c}">0</span>
+        <span class="barra">/</span>
+        <span class="total-wrap"><span class="total-num" id="a-${c}">0</span><span class="total-suf"> total</span></span>
+      `;
+    }
+    kpiCont.appendChild(div);
+  });
+
+  // --- Filtros ---
+  const filtrosCont = document.getElementById('filtrosItems');
+  filtrosCont.innerHTML = '';
+  codigos.forEach(c => {
+    const m = metaCat(c);
+    const div = document.createElement('div');
+    div.className = 'filtro-item';
+    div.dataset.tipo = c;
+    div.innerHTML = `
+      <span class="dot" style="background:${m.color}"></span>
+      <span class="filtro-label">${m.label}</span>
+      <span class="count" id="cnt-${c}">${fmt(INDEX.conteoGeo[c] || 0)}</span>
+    `;
+    div.classList.toggle('inactivo', !estado.filtroTipos.has(c));
+    div.addEventListener('click', () => toggleTipo(c));
+    filtrosCont.appendChild(div);
+  });
+}
+
+function actualizarVisualFiltros(){
+  document.querySelectorAll('.filtro-item').forEach(el => {
+    const tipo = el.dataset.tipo;
+    el.classList.toggle('inactivo', !estado.filtroTipos.has(tipo));
+  });
+}
+
+/* ============================================================
+   Mapa
+   ============================================================ */
+
+function circulo(o, meta, nombreMes, etiquetaEstado){
+  const m = L.circleMarker([o.lat, o.lng], {
+    radius: meta.radio,
+    fillColor: meta.color,
+    color:'#fff', weight:1.5, opacity:1, fillOpacity:0.88
+  });
+  let html = `<strong>${meta.label}</strong>`;
+  if(o.descripcion){ html += `<br>${o.descripcion}`; }
+  if(nombreMes)   { html += `<span class="tt-mes">${nombreMes}</span>`; }
+  if(etiquetaEstado){ html += `<span class="tt-estado">${etiquetaEstado}</span>`; }
+  m.bindTooltip(html, { direction:'top', offset:[0,-4] });
+  return m;
+}
+
+function pintarMapa(){
+  capaObras.clearLayers();
+  const D = DATOS;
+
+  const ordenZ = ['bac','per','imb','plu','cun','semr','sem','lum','lur','rep','pav'];
+  const tiposActivos = codigosVisibles().filter(c => estado.filtroTipos.has(c));
+  const ordenados = [
+    ...ordenZ.filter(t => tiposActivos.includes(t)),
+    ...tiposActivos.filter(t => !ordenZ.includes(t))
+  ];
+
+  // Siempre ejecución: foto del presente
+  ordenados.forEach(tipo => {
+    const meta = metaCat(tipo);
+    const obras = INDEX.porTipo[tipo] || [];
+    obras.forEach(o => {
+      let tt = `<strong>${meta.label}</strong>`;
+      if(o.descripcion){ tt += `<br>${o.descripcion}`; }
+      if(o.mes){
+        const mes = D.meses.find(m => m.key === o.mes);
+        if(mes) tt += `<span class="tt-mes">Inicio: ${mes.nombre}</span>`;
+      }
+      tt += `<span class="tt-estado">En ejecución</span>`;
+      const marker = L.circleMarker([o.lat, o.lng], {
+        radius: meta.radio, fillColor: meta.color,
+        color:'#fff', weight:1.5, opacity:1, fillOpacity:0.88
+      });
+      marker.bindTooltip(tt, { direction:'top', offset:[0,-4] });
+      marker.addTo(capaObras);
+    });
+  });
+}
+
+/* ============================================================
+   Actualización general
+   ============================================================ */
+
+function actualizar(){
+  if(!DATOS) return;
+  codigosVisibles().forEach(c => {
+    const a = document.getElementById('a-'+c);
+    if(a) a.textContent = fmt(INDEX.totales[c] || 0);
+  });
+  pintarMapa();
+}
+
+/* ============================================================
+   Acciones
+   ============================================================ */
+
+function toggleTipo(tipo){
+  if(estado.filtroTipos.has(tipo)) estado.filtroTipos.delete(tipo);
+  else estado.filtroTipos.add(tipo);
+  actualizarVisualFiltros();
+  pintarMapa();
+}
+function activarTodosLosTipos(){
+  codigosVisibles().forEach(c => estado.filtroTipos.add(c));
+  actualizarVisualFiltros();
+  pintarMapa();
+}
+function desactivarTodosLosTipos(){
+  estado.filtroTipos.clear();
+  actualizarVisualFiltros();
+  pintarMapa();
+}
+
+
+
+
+/* ============================================================
+   Timeline setup
+   ============================================================ */
+
+
+
+/* ============================================================
+   Estado de carga
+   ============================================================ */
+
+function setEstadoMsg(D){
+  const el = document.getElementById('estado');
+  el.className = 'estado-datos ok';
+  const enEjec    = D.obras.filter(o => o.estado === 'ejecucion').length;
+  const conCoord  = D.obras.filter(o => o.estado === 'ejecucion' && o.lat !== null).length;
+  const partes = [`✓ ${enEjec} en ejecución`, `${conCoord} con coordenadas`, `${D.codigosKpi.length} categorías`];
+  const tot = D.dropped.kpis + D.dropped.obras + D.dropped.obrasFueraDeKpi;
+  if(tot) partes.push(`(${tot} omitidas)`);
+  el.textContent = partes.join(' · ');
+}
+
+function setError(msg){
+  const el = document.getElementById('estado');
+  el.className = 'estado-datos error';
+  el.textContent = '✗ ' + msg;
+}
+
+/* ============================================================
+   Inicialización
+   ============================================================ */
+
+(async function init(){
+  const raw = await cargarDatos();
+  if(!raw.ok){ setError(raw.error); return; }
+
+  DATOS = procesar(raw.kpis, raw.obras, raw.equiv || []);
+
+  if(!DATOS.meses.length){
+    setError('No se encontraron meses válidos.');
+    return;
+  }
+
+  DATOS.codigosKpi.forEach(c => estado.filtroTipos.add(c));
+  INDEX = indexarPorEstado(DATOS, 'ejecucion');
+
+  renderPanel();
+  setEstadoMsg(DATOS);
+
+  // Listeners
+  document.getElementById('btnTodas').addEventListener('click', activarTodosLosTipos);
+  document.getElementById('btnNinguna').addEventListener('click', desactivarTodosLosTipos);
+
+  actualizar();
+
+  if(DATOS.dropped.kpis || DATOS.dropped.obras || DATOS.dropped.obrasFueraDeKpi){
+    console.warn(
+      `Filas omitidas — kpis inválidas: ${DATOS.dropped.kpis}, obras inválidas: ${DATOS.dropped.obras}, ` +
+      `obras con tipo fuera de columnas KPI: ${DATOS.dropped.obrasFueraDeKpi}`
+    );
+  }
+})();
+</script>
+
+</body>
+</html>
